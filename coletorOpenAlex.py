@@ -60,6 +60,7 @@ Características:
       saldo pré-pago
 - SQLite ao lado do EXE
 - exportação: 1 Work = 1 linha
+- referenced_works exportado como vetor JSON de Work IDs
 - autores consolidados em JSON na coluna autores
 - textos sanitizados para impedir quebra física de linhas no CSV
 - IDs OpenAlex de autores/instituições/sources preservados corretamente
@@ -112,7 +113,7 @@ except ImportError:
 # ============================================================
 
 APP_NAME = "coletorOpenAlex"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.0.0"
 
 BASE_URL = "https://api.openalex.org"
 
@@ -133,7 +134,7 @@ READ_TIMEOUT = 60
 
 RATE_REFRESH_SECONDS = 10
 
-CACHE_PROFILE = "coletorOpenAlex-work-profile-2026-08-v3"
+CACHE_PROFILE = "coletorOpenAlex-work-profile-2026-08-v2"
 
 
 # ============================================================
@@ -158,6 +159,7 @@ SELECT_FIELDS = ",".join(
         "open_access",
         "authorships",
         "referenced_works_count",
+        "referenced_works",
         "topics",
         "primary_topic",
         "keywords",
@@ -2833,6 +2835,7 @@ class WorkExporter:
         "fwci",
         "citation_normalized_percentile",
         "referenced_works_count",
+        "referenced_works",
 
         "autores",
 
@@ -3135,6 +3138,15 @@ class WorkExporter:
             ),
             "referenced_works_count": safe_string(
                 work.get("referenced_works_count")
+            ),
+            "referenced_works": json.dumps(
+                [
+                    normalize_openalex_entity_id(value)
+                    for value in (work.get("referenced_works") or [])
+                    if safe_string(value)
+                ],
+                ensure_ascii=False,
+                separators=(",", ":"),
             ),
 
             "autores": compact_json(authors),
